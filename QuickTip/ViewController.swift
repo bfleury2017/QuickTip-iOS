@@ -18,6 +18,7 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     @IBOutlet weak var pickerView: UIPickerView!
     
     let percentage = ["20%","25%","30%","35%"]
+    var numbers = "0"
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -78,12 +79,25 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         let charCount = billOutlet.text?.characters.count
 
         if (charCount! > 0) {
-            let bill = Double(billOutlet.text!)
-            let tip = bill! * tipPercent / 100
-            let total = bill! + tip
+            let numbers = Double(billOutlet.text!)!
             
-            tipLabel.text = String(format: "$%0.2f",tip)
-            totalLabel.text = String(format: "$%0.2f",total)
+            //var numberFromField = (NSString(string: currentString).doubleValue)/100
+            //billOutlet.text = formatter.string(from: numbers)
+            
+            //billOutlet.text = String(format: "%.2f", numbers)
+
+            let newBill = numbers//(numbers * 10) + numbers / 100
+            //billOutlet.text = String(format: "%0.2f", newBill)
+            
+            let tip = newBill * tipPercent / 100
+            let total = newBill + tip
+            
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .currency
+            formatter.locale = Locale(identifier: "en_US")
+            
+            tipLabel.text = formatter.string(from: tip as NSNumber)
+            totalLabel.text = formatter.string(from: total as NSNumber)
         } else {
             tipLabel.text = "TIP"
             totalLabel.text = "TOTAL"
