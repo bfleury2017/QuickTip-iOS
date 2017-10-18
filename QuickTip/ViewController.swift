@@ -8,30 +8,90 @@
 
 import UIKit
 
-class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource, UITextFieldDelegate {
-
-
+class ViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var tipLabel: UILabel!
     @IBOutlet weak var totalLabel: UILabel!
     @IBOutlet weak var billOutlet: UITextField!
     @IBOutlet weak var tipSegment: UISegmentedControl!
-    @IBOutlet weak var pickerView: UIPickerView!
     
-    let percentage = ["20%","25%","30%","35%"]
-    var numbers = "0"
+    var billAmount = 0.00
+    let numberFormatter = NumberFormatter()
+    let currencyFormatter = NumberFormatter()
+    var digitDeleted = true
+    
+    @IBAction func tipSegment(_ sender: Any) {
+        calculateTip(adjustPercentage: true)
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        //initial formatting of field using monetary
+        currencyFormatter.numberStyle = .currency
+        if let formattedBill = currencyFormatter.string(from: billAmount as NSNumber) {
+            billOutlet.text = formattedBill
+        }
         
         //execute tip calculation when text field value changes
         billOutlet.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
     }
     
     func textFieldDidChange() {
-        calculateTip()
+        //remove dollar signs from string
+        var editedBill = billOutlet.text?.replacingOccurrences(of: "$", with: "")
+        //remove commas from string
+        editedBill = editedBill?.replacingOccurrences(of: ",", with: "")
+        
+        //get the double value from the string
+        if let amount = numberFormatter.number(from: editedBill!)?.doubleValue {
+            billAmount = amount
+            calculateTip(adjustPercentage: false)
+        } else {
+            print("Invalid number: \(String(describing: editedBill))")
+        }
     }
-
+    
+    func calculateTip(adjustPercentage: Bool) {
+        
+        //get the current tip selection
+        var tipPercent: Double = 20
+        
+        //get the selected tip percentage from segment bar
+        switch(tipSegment.selectedSegmentIndex) {
+            case 0: tipPercent = 20
+            case 1: tipPercent = 25
+            case 2: tipPercent = 30
+            case 3: tipPercent = 35
+            default: tipPercent = 20
+        }
+        
+        //only calculate if not changing percentage
+        if !adjustPercentage {
+            //if user deleted a digit divide by 10, otherwise multiply by 10
+            billAmount = digitDeleted ? (billAmount / 10) : (billAmount * 10)
+            
+            //format the field with the new value
+            if let formattedBill = currencyFormatter.string(from: billAmount as NSNumber) {
+                billOutlet.text = formattedBill
+            }
+        }
+        
+        //calculate the tip and the total
+        let tip = billAmount * tipPercent / 100
+        let total = billAmount + tip
+        
+        //update the labels and move cursor to beginning of view
+        tipLabel.text = currencyFormatter.string(from: tip as NSNumber)
+        totalLabel.text = currencyFormatter.string(from: total as NSNumber)
+        let newPosition = billOutlet.endOfDocument
+        billOutlet.selectedTextRange = billOutlet.textRange(from: newPosition, to: newPosition)
+    }
+    
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        
+        //check if digit was deleted, count will be 0, set boolean as needed
+        let textFieldCount = string.count
+        digitDeleted = textFieldCount > 0 ? false : true
         
         //only allow one decimal in string
         let countdots = (textField.text?.components(separatedBy: ".").count)! - 1
@@ -44,66 +104,9 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         return true
     }
     
-
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
-
-    @IBAction func tipSegment(_ sender: Any) {
-        calculateTip()
-    }
-    
-    func calculateTip() {
-        //get the current tip selection
-        var tipPercent: Double = 20
-        
-        switch(tipSegment.selectedSegmentIndex) {
-        case 0: tipPercent = 20
-        case 1: tipPercent = 25
-        case 2: tipPercent = 30
-        case 3: tipPercent = 35
-        default: tipPercent = 20
-            
-        }
-        
-//        switch(pickerView.selectedRow(inComponent: 0)) {
-//        case 0: tipPercent = 20
-//        case 1: tipPercent = 25
-//        case 2: tipPercent = 30
-//        case 3: tipPercent = 35
-//        default: tipPercent = 20
-//            
-//        }
-        
-        //only calculate for size greater than 0
-        let charCount = billOutlet.text?.characters.count
-
-        if (charCount! > 0) {
-            let numbers = Double(billOutlet.text!)!
-            
-            //var numberFromField = (NSString(string: currentString).doubleValue)/100
-            //billOutlet.text = formatter.string(from: numbers)
-            
-            //billOutlet.text = String(format: "%.2f", numbers)
-
-            let newBill = numbers//(numbers * 10) + numbers / 100
-            //billOutlet.text = String(format: "%0.2f", newBill)
-            
-            let tip = newBill * tipPercent / 100
-            let total = newBill + tip
-            
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .currency
-            formatter.locale = Locale(identifier: "en_US")
-            
-            tipLabel.text = formatter.string(from: tip as NSNumber)
-            totalLabel.text = formatter.string(from: total as NSNumber)
-        } else {
-            tipLabel.text = "TIP"
-            totalLabel.text = "TOTAL"
-        }
-    }
-    
     
     //hide the keyboard when the view background is tapped
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -112,23 +115,5 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         super.touchesBegan(touches, with: event)
     }
     
-    func numberOfComponents(in pickerView: UIPickerView) -> Int {
-        return 1
-    }
-    
-    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        return percentage.count
-    }
-    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        return percentage[row]
-    }
-    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        calculateTip()
-    }
-    
-    //change the row height
-    func pickerView(_ pickerView: UIPickerView, rowHeightForComponent component: Int) -> CGFloat {
-        return 36.0
-    }
 }
 
