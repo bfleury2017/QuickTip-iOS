@@ -26,10 +26,12 @@ class ViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        //initial formatting of field using monetary
+        //initial formatting of fields using monetary
         currencyFormatter.numberStyle = .currency
         if let formattedBill = currencyFormatter.string(from: billAmount as NSNumber) {
             billOutlet.text = formattedBill
+            tipLabel.text = formattedBill
+            totalLabel.text = formattedBill
         }
         
         //execute tip calculation when text field value changes
